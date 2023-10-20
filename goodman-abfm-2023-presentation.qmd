@@ -290,7 +290,7 @@ modelsummary(
 
 * Look at only commonly provided services to eliminate the possibility of small or uncommon services driving the results
 
-## References
+## References {visibility="uncounted"}
 
 ::: {#refs}
 :::
