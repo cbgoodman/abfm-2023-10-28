@@ -9,7 +9,7 @@ author:
     orcid: 0000-0002-8565-9714
     email: cgoodman@niu.edu
     affiliations: Northern Illinois University
-date: last-modified
+date: 2023-10-23
 bibliography: references.bib
 citations-hover: true
 #suppress-bibliography: true
