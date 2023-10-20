@@ -1,0 +1,396 @@
+---
+title: "Are Conservative Cities Smaller in Functional Breadth?"
+format:
+  clean-revealjs:
+    self-contained: true
+    embed-resources: true
+author:
+  - name: Christopher B. Goodman
+    orcid: 0000-0002-8565-9714
+    email: cgoodman@niu.edu
+    affiliations: Northern Illinois University
+date: last-modified
+bibliography: references.bib
+citations-hover: true
+#suppress-bibliography: true
+---
+
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(tibble)
+library(pander)
+library(scales)
+library(haven)
+library(readxl)
+library(gt)
+library(gtsummary)
+library(rstatix)
+library(fixest)
+library("modelsummary")
+options(modelsummary_factory_default = "gt")
+```
+
+## {.center}
+
+Are cities with residents that hold more ideologically conservative policy positions smaller in functional breadth? 
+
+Do these cities provide fewer services? 
+
+## Motivations
+
+We expect the policy preferences of an area to be reflected in the policies adopted by their government
+
+- Broad support in the political science literature that this happens at the federal and state levels
+
+Does this translation hold for local governments?
+
+- A general assumption that there is no political way to deliver local public services
+- Instutitional innovations to limit political interference (city managers)
+
+## Motivations
+
+Prior research suggests [@tausanovitchwarshaw2014] that cities with more conservative policy preferences
+
+- Spend less 
+- Raise less tax revenue
+- Rely on the sales tax more heavily
+
+This analysis examines the first point in more detail. [What is the source of lower spending?]{.alert}
+
+- Less intensity of service provision?
+- Fewer services provided?
+
+
+## Sample Construction {#sec-data}
+
+Period: 2010 (+/-)
+
+Unit: City
+
+- $N = 1,230$ cities
+
+Data: [[Appendix]{.button}](#sec-appendix-data)
+
+- Census of Governments
+- Policy conservatism [@tausanovitchwarshaw2014]
+- American Community Survey
+
+## Measuring Functional Breadth
+
+:::{.callout-note}
+## Functional Performance Index
+
+$$
+FP_i = \sum_{n=1}^k f_k \times \frac{E_{jk}}{N_j}
+$$ 
+
+where $f_{k}$ is an indicator $[0, 1]$ that municipality $i$ provides service $k$. For each service $k$ a municipality provides, it is weighted by the sample per capita expenditure in category $k$.
+:::
+
+:::{.callout-note}
+## Functional Inclusiveness or Scope
+
+$$
+F_i = \sum_{n=1}^k f_{k}
+$$
+
+where $f_k$ is an indicator $[0, 1]$ that municipality $i$ provides service $k$
+:::
+
+## {background-image="figures/services.svg" background-size="100%"}
+
+## Estimation Strategy
+
+:::{.callout-note}
+## Regression Specification
+
+The main specification is as follows:
+
+$$
+\text{Functional Breadth}_i = \alpha +  \text{Citizen Ideology}_i \delta +  X_i \beta + \varepsilon_i
+$$
+:::
+
+$X_i$ is a vector of variables that control for 
+
+* the size of the city
+* the wealth of the city
+* the racial composition of the city
+* the age of the city
+
+## {background-image="figures/mrp_est.svg" background-size="100%"}
+
+## Descriptive Statistics 
+
+
+```{r descriptives, include=FALSE}
+source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/1_data_import.R")
+source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/2_variable_creation.R")
+
+analysis_vars = 
+  analysis_vars %>%
+  rename(
+    "Functional performance index" = fpi_mean,
+    "Functions" = functions,
+    "Policy conservatism" = mrp_estimate,
+    "Population (1000s)" = pop1000,
+    "Median household income" = mhi_def,
+    "Median house price" = mhp_def,
+    "Race index" = d_race,
+    "Municipal age" = muniage
+  )
+
+```
+
+```{r show-descriptives, echo=FALSE, results="asis"}
+analysis_vars %>%
+select("Functional performance index", "Functions", "Policy conservatism", "Population (1000s)", "Median household income", "Median house price", "Race index", "Municipal age") %>%
+get_summary_stats(show = c("mean", "sd", "min", "max")) %>% 
+  gt() %>% 
+  cols_label(
+    variable = md("Variable"),
+    n = md("N"),
+    mean = md("Mean"),
+    sd = md("SD"),
+    min = md("Min"),
+    max = md("Max"),
+  ) %>%  
+  cols_align(
+  align = "center", 
+  columns = c(n, mean, sd, min, max)
+  ) %>%
+  cols_align(
+  align = "left", 
+  columns = variable
+  ) %>%
+  fmt_number(
+    columns = c(mean, sd, min, max),
+    decimals = 3,
+    use_seps = TRUE
+  ) %>%
+  opt_align_table_header(align = "center") %>%
+  tab_options(
+        table_body.hlines.style = "none", 
+        column_labels.font.weight = "bold",
+        data_row.padding = px(4),
+        column_labels.font.size = px(28),
+        table.font.size = px(24)
+        )
+
+```
+
+## Preliminary Findings
+
+```{r prelim-results, include=FALSE}
+source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/2_variable_creation.R")
+
+fpi = feols(
+    fpi_mean ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+functions = feols(
+    functions ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+dict = c("fpi_mean"             = "Functional performance index",
+         "functions"            = "Functions",
+         "mrp_estimate"         = "Policy conservatism",
+         "pop1000"              = "Population (1000s)",
+         "mhi_def"              = "Median household income",
+         "mhp_def"              = "Median house price",
+         "d_race"               = "Race index",
+         "muniage"              = "Municipality age",
+         "muniage2"             = "Municipality age squared")
+
+fpi = setNames(fpi, c("(1)", "(2)"))
+functions = setNames(functions, c("(3)", "(4)"))
+
+gm <- tibble::tribble(
+  ~raw,        ~clean,          ~fmt,
+  "nobs",      "N",             0,
+  "vcov.type", "SE Clustered", 2)
+```
+
+
+```{r show-prelim-results, echo=FALSE, results="asis"}
+modelsummary(
+    c(fpi, functions),
+    coef_map = dict, stars = TRUE,
+    gof_omit = "Adj|IC|F|Log|RMSE|R2",
+    gof_map = gm
+    ) %>%
+    gt::tab_spanner(
+        label = "Functional Performance Index",
+        columns = 2:3
+    ) %>%
+    gt::tab_spanner(
+        label = "Functions",
+        columns = 4:5
+    ) %>%
+    tab_options(
+        table_body.hlines.style = "none", 
+        column_labels.font.weight = "bold",
+        data_row.padding = px(4),
+        column_labels.font.size = px(22),
+        table.font.size = px(18)
+        )
+```
+
+## Extensions
+
+### What about elected mayors or city managers?
+
+```{r extension-results, include=FALSE}
+fpi_elected = feols(
+    fpi_mean ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+functions_elected = feols(
+    functions ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+dict = c("fpi_mean"             = "Functional perfomance index",
+         "functions"            = "Functions",
+         "mrp_estimate"         = "Policy conservatism",
+         "electedmayor"         = "Elected mayor (=1)",
+         "mrp_electedmayor"     = "Policy conservatism x elected mayor")
+
+fpi_elected = setNames(fpi_elected, c("(1)", "(2)"))
+functions_elected = setNames(functions_elected, c("(3)", "(4)"))
+
+gm <- tibble::tribble(
+  ~raw,        ~clean,          ~fmt,
+  "nobs",      "N",             0,
+  "vcov.type", "SE Clustered", 2)
+```
+```{r show-extension-results, echo=FALSE, results="asis"}
+modelsummary(
+    c(fpi_elected, functions_elected),
+    coef_map = dict, stars = TRUE,
+    gof_omit = "Adj|IC|F|Log|RMSE|R2",
+    gof_map = gm
+    ) %>%
+    gt::tab_spanner(
+        label = "Functional Performance Index",
+        columns = 2:3
+    ) %>%
+    gt::tab_spanner(
+        label = "Functions",
+        columns = 4:5
+    ) %>%
+    tab_options(
+        table_body.hlines.style = "none", 
+        column_labels.font.weight = "bold",
+        data_row.padding = px(4),
+        column_labels.font.size = px(22),
+        table.font.size = px(18)
+        )
+```
+
+## Discussion
+
+* Conservative cities are smaller in functional breadth
+
+  * This is largely driven by fewer functions provided
+  * Approximately 0.85 to 1.25 fewer functions provided
+
+* Elected mayors eliminate or reduce this effect, suggesting electoral incentives to "do something" may reduce responsiveness
+
+
+## Next steps
+
+* Explore additional institutional factors that could limit responsiveness
+  
+  * Partisan council elections, districting, referendum requirements, etc.
+
+* Look at only commonly provided services to
+
+## References
+
+::: {#refs}
+:::
+
+## Appendix {#sec-appendix-data visibility="uncounted" .smaller}
+### Data
+
+```{r data-sources, include=FALSE}
+data_sources <- tribble(
+  ~Variable,  ~Source,  ~Year,
+  "Functional breadth", "Census of Governments", "2012",
+  "Policy conservatism", "@tausanovitchwarshaw2014", "Various",
+  "Population", "ACS", "2006-2010",
+  "Median household income", "ACS", "2006-2010",
+  "Median house price", "ACS", "2006-2010",
+  "Race index", "ACS", "2006-2010",
+  "Municipal age", "Various", NA
+) 
+```
+
+```{r show-data-sources, echo=FALSE, results="asis"}
+data_sources %>%
+  select(Variable, Source, Year) %>% 
+  pandoc.table(justify = "lcc", missing = "—")
+```
+
+
+[[Back to main]{.button}](#sec-data)
+
+
+## Appendix {#sec-appendix visibility="uncounted" .smaller}
+```{r base-regressions, include=FALSE}
+base_exp = feols(
+    pcdirexp ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+base_rev = feols(
+    pcrev ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+base_sales = feols(
+    share_sales_tax ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+)
+
+dict = c("pcdirexp"             = "Per capita direct expenditures",
+         "pcrev"                = "Per capita total revenue",
+         "share_sales_tax"      = "Sales tax share",
+         "mrp_estimate"         = "Policy conservatism",
+         "pop1000"              = "Population (1000s)",
+         "mhi_def"              = "Median household income",
+         "mhp_def"              = "Median house price",
+         "d_race"               = "Race index",
+         "muniage"              = "Municipality age",
+         "muniage2"             = "Municipality age squared")
+
+
+base_exp = setNames(base_exp, c("(1)", "(2)"))
+base_rev = setNames(base_rev, c("(3)", "(4)"))
+base_sales = setNames(base_sales, c("(5)", "(6)"))
+```
+```{r show-base-regressions, echo=FALSE, results="asis"}
+modelsummary(
+    c(base_exp, base_rev, base_sales),
+    coef_map = dict, stars = TRUE,
+    gof_omit = "Adj|IC|F|Log|RMSE|R2"
+    ) %>%
+    gt::tab_spanner(
+        label = "Per Capita Expenditures",
+        columns = 2:3
+    ) %>%
+    gt::tab_spanner(
+        label = "Per Capita Revenues",
+        columns = 4:5
+    ) %>%
+    gt::tab_spanner(
+        label = "Sales Tax Share",
+        columns = 6:7
+  )%>%
+  tab_options(
+      table_body.hlines.style = "none", 
+      column_labels.font.weight = "bold",
+      data_row.padding = px(4),
+      column_labels.font.size = px(20),
+      table.font.size = px(16)
+      )
+```
+
+[[Back to main]{.button}](#sec-crossref)
