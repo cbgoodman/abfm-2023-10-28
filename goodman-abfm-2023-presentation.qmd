@@ -127,62 +127,37 @@ $X_i$ is a vector of variables that control for
 source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/1_data_import.R")
 source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/2_variable_creation.R")
 
-analysis_vars = 
-  analysis_vars %>%
-  rename(
-    "Functional performance index" = fpi_mean,
-    "Functions" = functions,
-    "Policy conservatism" = mrp_estimate,
-    "Population (1000s)" = pop1000,
-    "Median household income" = mhi_def,
-    "Median house price" = mhp_def,
-    "Race index" = d_race,
-    "Municipal age" = muniage
-  )
+analysis_vars$fpi_mean = labelled(analysis_vars$fpi_mean, label = "Functional performance index")
+analysis_vars$functions = labelled(analysis_vars$functions, label = "Functions")
+analysis_vars$mrp_estimate = labelled(analysis_vars$mrp_estimate, label = "Policy conservatism")
+analysis_vars$pop1000 = labelled(analysis_vars$pop1000, label = "Population (1000s)")
+analysis_vars$mhi_def = labelled(analysis_vars$mhi_def, label = "Median household income")
+analysis_vars$mhp_def = labelled(analysis_vars$mhp_def, label = "Median house price")
+analysis_vars$d_race = labelled(analysis_vars$d_race, label = "Race index")
+analysis_vars$muniage = labelled(analysis_vars$muniage, label = "Municipal age")
 
 ```
 
 ```{r show-descriptives, echo=FALSE, results="asis"}
-analysis_vars %>%
-select("Functional performance index", "Functions", "Policy conservatism", "Population (1000s)", "Median household income", "Median house price", "Race index", "Municipal age") %>%
-get_summary_stats(show = c("mean", "sd", "min", "max")) %>% 
-  gt() %>% 
-  cols_label(
-    variable = md("Variable"),
-    n = md("N"),
-    mean = md("Mean"),
-    sd = md("SD"),
-    min = md("Min"),
-    max = md("Max"),
-  ) %>%  
-  cols_align(
-  align = "center", 
-  columns = c(n, mean, sd, min, max)
-  ) %>%
-  cols_align(
-  align = "left", 
-  columns = variable
-  ) %>%
-  fmt_number(
-    columns = c(mean, sd, min, max),
-    decimals = 3,
-    use_seps = TRUE
-  ) %>%
-  opt_align_table_header(align = "center") %>%
-  tab_options(
-        table_body.hlines.style = "none", 
+datasummary(
+    fpi_mean + functions + mrp_estimate + pop1000 + mhi_def + mhp_def + d_race + muniage ~ Mean + SD + Min + Max,
+    data = analysis_vars,
+    align = "lrrrr",
+    fmt = 2,
+    output = 'gt') %>%
+    tab_options(
+        table_body.hlines.style = "none",
         column_labels.font.weight = "bold",
         data_row.padding = px(4),
         column_labels.font.size = px(28),
         table.font.size = px(24)
-        )
+    )
 
 ```
 
 ## Preliminary Findings
 
 ```{r prelim-results, include=FALSE}
-source("~/Library/CloudStorage/Dropbox/Projects/Papers/FPI-Ideology/analysis/scripts/2_variable_creation.R")
 
 fpi = feols(
     fpi_mean ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
@@ -303,7 +278,7 @@ modelsummary(
   
   * Partisan council elections, districting, referendum requirements, etc.
 
-* Look at only commonly provided services to
+* Look at only commonly provided services to eliminate the possibility of small or uncommon services driving the results
 
 ## References
 
