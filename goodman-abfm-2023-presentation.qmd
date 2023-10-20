@@ -23,10 +23,8 @@ library(scales)
 library(haven)
 library(readxl)
 library(gt)
-library(gtsummary)
-library(rstatix)
 library(fixest)
-library("modelsummary")
+library(modelsummary)
 options(modelsummary_factory_default = "gt")
 ```
 
@@ -107,7 +105,7 @@ where $f_k$ is an indicator $[0, 1]$ that municipality $i$ provides service $k$
 The main specification is as follows:
 
 $$
-\text{Functional Breadth}_i = \alpha +  \text{Citizen Ideology}_i \delta +  X_i \beta + \varepsilon_i
+\text{Functional Breadth}_i = \alpha +  \text{Citizen Ideology}_i \delta +  X_i \beta + \gamma_i + \varepsilon_i
 $$
 :::
 
@@ -184,6 +182,10 @@ gm <- tibble::tribble(
   ~raw,        ~clean,          ~fmt,
   "nobs",      "N",             0,
   "vcov.type", "SE Clustered", 2)
+
+rows <- tribble(~term,          ~'(1)', ~'(2)', ~'(3)', ~'(4)',
+                'State FE', 'Yes', 'Yes', 'Yes', 'Yes')
+attr(rows, 'position') <- 16
 ```
 
 
@@ -192,7 +194,8 @@ modelsummary(
     c(fpi, functions),
     coef_map = dict, stars = TRUE,
     gof_omit = "Adj|IC|F|Log|RMSE|R2",
-    gof_map = gm
+    gof_map = gm,
+    add_rows = rows
     ) %>%
     gt::tab_spanner(
         label = "Functional Performance Index",
@@ -237,13 +240,20 @@ gm <- tibble::tribble(
   ~raw,        ~clean,          ~fmt,
   "nobs",      "N",             0,
   "vcov.type", "SE Clustered", 2)
+
+rows <- tribble(~term,          ~'(1)', ~'(2)', ~'(3)', ~'(4)',
+                'Controls', 'Yes', 'Yes', 'Yes', 'Yes',
+                'State FE', 'Yes', 'Yes', 'Yes', 'Yes')
+attr(rows, 'position') <- c(8,9)
+
 ```
 ```{r show-extension-results, echo=FALSE, results="asis"}
 modelsummary(
     c(fpi_elected, functions_elected),
     coef_map = dict, stars = TRUE,
     gof_omit = "Adj|IC|F|Log|RMSE|R2",
-    gof_map = gm
+    gof_map = gm,
+    add_rows = rows
     ) %>%
     gt::tab_spanner(
         label = "Functional Performance Index",
@@ -340,12 +350,18 @@ dict = c("pcdirexp"             = "Per capita direct expenditures",
 base_exp = setNames(base_exp, c("(1)", "(2)"))
 base_rev = setNames(base_rev, c("(3)", "(4)"))
 base_sales = setNames(base_sales, c("(5)", "(6)"))
+
+rows <- tribble(~term,          ~'(1)', ~'(2)', ~'(3)', ~'(4)', ~'(5)', ~'(6)',
+                'State FE', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes', 'Yes')
+attr(rows, 'position') <- 16
 ```
 ```{r show-base-regressions, echo=FALSE, results="asis"}
 modelsummary(
     c(base_exp, base_rev, base_sales),
     coef_map = dict, stars = TRUE,
-    gof_omit = "Adj|IC|F|Log|RMSE|R2"
+    gof_omit = "Adj|IC|F|Log|RMSE|R2",
+    gof_map = gm,
+    add_rows = rows
     ) %>%
     gt::tab_spanner(
         label = "Per Capita Expenditures",
