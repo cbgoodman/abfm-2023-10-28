@@ -131,14 +131,14 @@ analysis_vars$mrp_estimate = labelled(analysis_vars$mrp_estimate, label = "Polic
 analysis_vars$pop1000 = labelled(analysis_vars$pop1000, label = "Population (1000s)")
 analysis_vars$mhi_def = labelled(analysis_vars$mhi_def, label = "Median household income")
 analysis_vars$mhp_def = labelled(analysis_vars$mhp_def, label = "Median house price")
-analysis_vars$d_race = labelled(analysis_vars$d_race, label = "Race index")
+analysis_vars$nonwhite = labelled(analysis_vars$nonwhite, label = "100 - percent white")
 analysis_vars$muniage = labelled(analysis_vars$muniage, label = "Municipal age")
 
 ```
 
 ```{r show-descriptives, echo=FALSE, results="asis"}
 datasummary(
-    fpi_mean + functions + mrp_estimate + pop1000 + mhi_def + mhp_def + d_race + muniage ~ Mean + SD + Min + Max,
+    fpi_mean + functions + mrp_estimate + pop1000 + mhi_def + mhp_def + nonwhite + muniage ~ Mean + SD + Min + Max,
     data = analysis_vars,
     align = "lrrrr",
     fmt = 2,
@@ -158,11 +158,11 @@ datasummary(
 ```{r prelim-results, include=FALSE}
 
 fpi = feols(
-    fpi_mean ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    fpi_mean ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 functions = feols(
-    functions ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    functions ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 dict = c("fpi_mean"             = "Functional performance index",
@@ -171,7 +171,7 @@ dict = c("fpi_mean"             = "Functional performance index",
          "pop1000"              = "Population (1000s)",
          "mhi_def"              = "Median household income",
          "mhp_def"              = "Median house price",
-         "d_race"               = "Race index",
+         "nonwhite"             = "100 - percent white",
          "muniage"              = "Municipality age",
          "muniage2"             = "Municipality age squared")
 
@@ -220,11 +220,11 @@ modelsummary(
 
 ```{r extension-results, include=FALSE}
 fpi_elected = feols(
-    fpi_mean ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    fpi_mean ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 functions_elected = feols(
-    functions ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    functions ~ mrp_estimate + csw0(electedmayor + mrp_electedmayor + pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 dict = c("fpi_mean"             = "Functional perfomance index",
@@ -306,7 +306,7 @@ data_sources <- tribble(
   "Population", "ACS", "2006-2010",
   "Median household income", "ACS", "2006-2010",
   "Median house price", "ACS", "2006-2010",
-  "Race index", "ACS", "2006-2010",
+  "100 - percent white", "ACS", "2006-2010",
   "Municipal age", "Various", NA
 ) 
 ```
@@ -324,15 +324,15 @@ data_sources %>%
 ## Appendix {#sec-appendix visibility="uncounted" .smaller}
 ```{r base-regressions, include=FALSE}
 base_exp = feols(
-    pcdirexp ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    pcdirexp ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 base_rev = feols(
-    pcrev ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    pcrev ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 base_sales = feols(
-    share_sales_tax ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + d_race + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
+    share_sales_tax ~ mrp_estimate + csw0(pop1000 + mhi_def + mhp_def + nonwhite + muniage + muniage2) | State, data = analysis_vars, vcov = cluster ~ State
 )
 
 dict = c("pcdirexp"             = "Per capita direct expenditures",
@@ -342,7 +342,7 @@ dict = c("pcdirexp"             = "Per capita direct expenditures",
          "pop1000"              = "Population (1000s)",
          "mhi_def"              = "Median household income",
          "mhp_def"              = "Median house price",
-         "d_race"               = "Race index",
+         "nonwhite"             = "100 - percent white",
          "muniage"              = "Municipality age",
          "muniage2"             = "Municipality age squared")
 
